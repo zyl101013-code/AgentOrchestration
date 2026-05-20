@@ -20,13 +20,22 @@ def create_app(config: Dict = None) -> FastAPI:
         redoc_url="/api/redoc",
     )
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=os.getenv("CORS_ORIGINS", "*").split(","),
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    cors_origins = os.getenv("CORS_ORIGINS")
+    if cors_origins and cors_origins != "*":
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=cors_origins.split(","),
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+    elif cors_origins == "*":
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
 
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=os.getenv("TRUSTED_HOSTS", "*").split(","))
 
