@@ -60,8 +60,16 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
         except Exception as e:
             logger.error(f"Unhandled error: {e}", exc_info=True)
             safe = self._sanitize(str(e))
+            headers = {
+                "X-Content-Type-Options": "nosniff",
+                "X-Frame-Options": "DENY",
+                "Content-Security-Policy": "default-src 'none'",
+                "X-XSS-Protection": "1; mode=block",
+                "Cache-Control": "no-store"
+            }
             return Response(status_code=500,
                 content=json.dumps({"error":"internal_error","detail":safe}),
+                headers=headers,
                 media_type="application/json")
 
     def _sanitize(self, detail: str) -> str:
