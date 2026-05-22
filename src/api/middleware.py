@@ -49,7 +49,25 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         duration = time.time() - start
         logger.info(f"{request.method} {request.url.path} {response.status_code} {duration:.3f}s")
         return response
+class ErrorHandlingMiddleware(BaseHTTPMiddleware):
+    SENSITIVE_FIELDS = {"password", "secret", "token", "api_key",
+                        "key", "authorization", "credit_card",
+                        "ssn", "access_key", "private_key"}
 
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        try:
+            return await call_next(request)
+        except Exception as e:
+            logger.error(f"Unhandled error: {e}", exc_info=True)
+            safe = self._sanitize(str(e))
+            return Response(status_code=500,
+                content=json.dumps({"error":"internal_error","detail":safe}),
+                media_type="application/json")
+
+    def _sanitize(self, detail: str) -> str:
+        for f in self.SENSITIVE_FIELDS:
+            detail = detail.replace(f, "***")
+        return detail
 # 2019-03-01T18:35:19 update
 
 # 2019-04-03T13:22:05 update
